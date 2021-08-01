@@ -1,0 +1,30 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/focal64"
+  config.vm.box_check_update = false
+  config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
+  config.vm.network "private_network", ip: "192.168.33.12"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "ubuntu-20.04-nginx"
+    vb.cpus = "2"
+    vb.memory = "1024"
+  end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y nginx
+
+    # remove default virtualhost config
+    rm -f /etc/nginx/sites-enabled/default
+
+    # copy virtualhost config
+    cp /vagrant/vagrant-virtualhost.conf /etc/nginx/sites-available/
+    ln -sf /etc/nginx/sites-available/vagrant-virtualhost.conf /etc/nginx/sites-enabled/vagrant-virtualhost.conf
+
+    # restart nginx services
+    systemctl restart nginx
+  SHELL
+end
